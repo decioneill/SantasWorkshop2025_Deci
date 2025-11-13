@@ -10,17 +10,16 @@ namespace US1_SingleElf
 {
     internal class Program
     {
+        static Sleigh _sleigh = new Sleigh();
+        static Random _random = new Random();
+        static Queue<ToyMachine> _toyMachines;
+        static Queue<Elf> _elves;
+        static List<Present> UndeliveredPresents = new List<Present>();
+        static int _expectedTotal = 0;
+        static int _total = 0;
 
         static async Task Main(string[] args)
         {
-            int _expectedTotal = 0;
-            Sleigh _sleigh = new Sleigh();
-            Random _random = new Random();
-            int _total = 0;
-            Queue<ToyMachine> _toyMachines;
-            Queue<Elf> _elves;
-
-            List<Present> UndeliveredPresents = new List<Present>();
 
             _toyMachines = RandomQueueAmount<ToyMachine>(_random.Next(1, 100), "ToyMachines");
             _elves = RandomQueueAmount<Elf>(_random.Next(1, 100), "Elves");
@@ -31,29 +30,48 @@ namespace US1_SingleElf
 
             while (true)
             {
-                if (_total >= _expectedTotal) 
-                    int.TryParse(Console.ReadLine(), out _expectedTotal);
-                List<Task> taskList = new List<Task>();
-                if(_expectedTotal > _total)
+                if (_total >= _expectedTotal)
                 {
-                    for(int i = _expectedTotal - _total; i > 0; i--)
-                    {
-                        taskList.Add(Task.Run(async () =>
-                        {
-                            await CreateTaskForPresent(_total++, _toyMachines, _elves, UndeliveredPresents);
-                        }));
-                    }
-                    await Task.WhenAll(taskList.ToArray());
+                    int.TryParse(Console.ReadLine(), out _expectedTotal);
+                    Console.WriteLine($"Total Expected Presents: {_expectedTotal}");
+                    Console.WriteLine($"Current Total Presents: {_total}");
                 }
+                await BuildPresentsAndDeliver();
             }
         }
 
-        private static async Task CreateTaskForPresent(int _total, Queue<ToyMachine> _toyMachines, Queue<Elf> _elves, List<Present> UndeliveredPresents)
+        private static async Task BuildPresentsAndDeliver()
         {
-            ToyMachine _nextMachine = _toyMachines.Dequeue();
+            List<Task> taskList = new List<Task>();
+
+            for (int i = _expectedTotal - _total; i > 0; i--)
+            {
+                ToyMachine _nextMachine = null;
+                Elf _nextElf = null;
+                if (_toyMachines.Any()) _nextMachine = _toyMachines.Dequeue();
+                if (_elves.Any()) _nextElf = _elves.Dequeue();
+                if (_nextMachine == null || _nextElf == null)
+                {
+                    continue;
+                }
+                taskList.Add(Task.Run(async () =>
+                {
+                    await CreatePresentTask(++_total, _nextMachine, _nextElf, UndeliveredPresents);
+                }));
+            }
+            if (taskList.Any())
+            {
+                Task allPresentTasks = Task.WhenAll(taskList.ToArray());
+                await allPresentTasks;
+            }
+            if (_total >= _expectedTotal) Console.WriteLine($"All {_total} Presents packed and sent. Merry Christmas!");
+        }
+
+
+        private static async Task CreatePresentTask(int _total, ToyMachine _nextMachine, Elf _nextElf, List<Present> UndeliveredPresents)
+        {
             Present _nextPresent = _nextMachine.MakePresent($"Present-{_total}");
             _toyMachines.Enqueue(_nextMachine);
-            Elf _nextElf = _elves.Dequeue();
             if (_nextElf != null)
             {
                 if (!await _nextElf.DeliverPresent(_nextPresent))
