@@ -17,12 +17,14 @@ namespace US1_SingleElf
         static List<Present> UndeliveredPresents = new List<Present>();
         static int _expectedTotal = 0;
         static int _total = 0;
+        static object _machinesLock = new object();
+        static object _elvesLock = new object();
 
         static async Task Main(string[] args)
         {
 
-            _toyMachines = RandomQueueAmount<ToyMachine>(_random.Next(1, 100), "ToyMachines");
-            _elves = RandomQueueAmount<Elf>(_random.Next(1, 100), "Elves");
+            _toyMachines = RandomQueueAmount<ToyMachine>(_random.Next(1, 10), "ToyMachines");
+            _elves = RandomQueueAmount<Elf>(_random.Next(1, 10), "Elves");
             foreach (Elf elf in _elves)
             {
                 elf.sleigh = _sleigh;
@@ -48,15 +50,21 @@ namespace US1_SingleElf
             {
                 ToyMachine _nextMachine = null;
                 Elf _nextElf = null;
-                if (_toyMachines.Any()) _nextMachine = _toyMachines.Dequeue();
-                if (_elves.Any()) _nextElf = _elves.Dequeue();
+                lock (_machinesLock)
+                {
+                    if (_toyMachines.Any()) _nextMachine = _toyMachines.Dequeue();
+                }
+                lock (_elvesLock)
+                {
+                    if (_elves.Any()) _nextElf = _elves.Dequeue();
+                }
                 if (_nextMachine == null || _nextElf == null)
                 {
-                    continue;
+                    break;
                 }
                 taskList.Add(Task.Run(async () =>
                 {
-                    await CreatePresentTask(++_total, _nextMachine, _nextElf, UndeliveredPresents);
+                    await CreatePresentTask(++_total, _nextMachine, _nextElf);
                 }));
             }
             if (taskList.Any())
@@ -68,10 +76,13 @@ namespace US1_SingleElf
         }
 
 
-        private static async Task CreatePresentTask(int _total, ToyMachine _nextMachine, Elf _nextElf, List<Present> UndeliveredPresents)
+        private static async Task CreatePresentTask(int _total, ToyMachine _nextMachine, Elf _nextElf)
         {
             Present _nextPresent = _nextMachine.MakePresent($"Present-{_total}");
-            _toyMachines.Enqueue(_nextMachine);
+            lock (_machinesLock)
+            {
+                _toyMachines.Enqueue(_nextMachine);
+            }
             if (_nextElf != null)
             {
                 if (!await _nextElf.DeliverPresent(_nextPresent))
@@ -79,7 +90,11 @@ namespace US1_SingleElf
                     UndeliveredPresents.Add(_nextPresent);
                     Console.WriteLine("Present \"{name}\" not delivered.");
                 }
-                _elves.Enqueue(_nextElf);
+
+                lock (_elvesLock)
+                {
+                    _elves.Enqueue(_nextElf);
+                }                    
             }
         }
 
