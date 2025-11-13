@@ -27,6 +27,8 @@ namespace US1_SingleElf
 
         #endregion
 
+        Random numberRandomizer = new Random();
+
         public void OnLogRequest(Object source, EventArgs e)
         {
             //custom logging logic can go here
@@ -34,9 +36,11 @@ namespace US1_SingleElf
 
         public async Task<bool> Pack(Present present)
         {
+            int delayAmount = numberRandomizer.Next(1, 1000);
+            await Task.Delay(delayAmount);
             if (present == null) return false;
             await Task.Run(() => {
-                Console.WriteLine($"Present \"{present.Name}\" packed and sent.");
+                Console.WriteLine($"{delayAmount}: Present \"{present.Name}\", created by {present.CreatedByMachine}, delivered by {present.DeliveredByElf}, packed and sent.");
             });
             return true;
         }

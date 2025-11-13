@@ -7,11 +7,17 @@ using System.Threading.Tasks;
 
 namespace US1_SingleElf
 {
-    public class ToyMachine
+    public class ToyMachine : NamedObject
     {
+        public string Name { get; set; }
+
+        public ToyMachine()
+        {
+        }
+
         public Present MakePresent(string name)
         {
-            Present present = new Present(name);
+            Present present = new Present() { Name = name, CreatedByMachine = Name };
             return present;
         }
     }

@@ -1,12 +1,15 @@
 ﻿namespace US1_SingleElf
 {
-    public class Present
+    public class Present : NamedObject
     {
         public string Name { get; set; }
 
-        public Present(string name)
+        public string CreatedByMachine { get; set; }
+
+        public string DeliveredByElf { get; set; }
+
+        public Present()
         {
-            Name = name;
         }
     }
 }

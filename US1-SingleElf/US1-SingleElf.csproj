@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Elf.cs" />
+    <Compile Include="NamedObject.cs" />
     <Compile Include="Sleigh.cs" />
     <Compile Include="Present.cs" />
     <Compile Include="Program.cs" />
