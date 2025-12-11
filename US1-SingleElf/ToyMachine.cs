@@ -15,9 +15,9 @@ namespace US1_SingleElf
         {
         }
 
-        public Present MakePresent(string name)
+        public Present MakePresent(string presentName, string familyName)
         {
-            Present present = new Present() { Name = name, CreatedByMachine = Name };
+            Present present = new Present() { Name = presentName, Family = familyName, CreatedByMachine = Name };
             return present;
         }
     }

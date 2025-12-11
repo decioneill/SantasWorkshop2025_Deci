@@ -8,6 +8,8 @@
 
         public string DeliveredByElf { get; set; }
 
+        public string Family { get; set; }
+
         public Present()
         {
         }

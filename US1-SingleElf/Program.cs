@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace US1_SingleElf
 {
@@ -25,8 +23,9 @@ namespace US1_SingleElf
 
         static async Task Main(string[] args)
         {
-            _toyMachines = RandomQueueAmount<ToyMachine>(_random.Next(1, 10000), "ToyMachines");
-            _elves = RandomQueueAmount<Elf>(_random.Next(1, 10000), "Elves");
+            string[] _familyNames = new StreamReader("..\\..\\surnames.txt").ReadToEnd().Split(',');
+            _toyMachines = RandomQueueAmount<ToyMachine>(_random.Next(1, 10000), "Machine");
+            _elves = RandomQueueAmount<Elf>(_random.Next(1, 10000), "Elf");
             foreach (Elf elf in _elves)
             {
                 elf.sleigh = _sleigh;
@@ -40,11 +39,13 @@ namespace US1_SingleElf
                     {
                         Console.WriteLine($"All {_total} Presents packed and sent. Merry Christmas!");
                     }
-                    int.TryParse(Console.ReadLine(), out _expectedTotal);
+                    Console.WriteLine("Place an order amount?");
+                    int.TryParse(Console.ReadLine(), out int _newOrderAmount);
+                    _expectedTotal += _newOrderAmount;
                     Console.WriteLine($"Total Expected Presents: {_expectedTotal}");
                     Console.WriteLine($"Current Total Presents: {_total}");
                 }
-                _total = await _toyMakerHandler.BuildPresents(_presentLock, _machinesLock, _toyMachines, UndeliveredPresents, _expectedTotal, _total);
+                _total = await _toyMakerHandler.BuildPresents(_familyNames, _presentLock, _machinesLock, _toyMachines, UndeliveredPresents, _expectedTotal, _total);
                 await _elvesDeliveryHandler.DeliverPresents(_presentLock, _elvesLock, _elves, UndeliveredPresents);
             }
         }
@@ -59,7 +60,7 @@ namespace US1_SingleElf
                 newItem.Name = $"{name}-{i}";
                 _queue.Enqueue(newItem);
             }
-            Console.WriteLine($"{name}: {number}");
+            Console.WriteLine($"{name} Queue: {number}");
             return _queue;
         }
     }

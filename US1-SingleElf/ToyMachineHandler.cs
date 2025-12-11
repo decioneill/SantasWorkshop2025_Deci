@@ -7,7 +7,9 @@ namespace US1_SingleElf
 {
     public class ToyMachineHandler
     {
-        public async Task<int> BuildPresents(object presentLock, object machinesLock, Queue<ToyMachine> toyMachines, Queue<Present> undeliveredPresents, int expectedTotal, int total)
+        static Random _random = new Random();
+
+        public async Task<int> BuildPresents(string[] familyNames, object presentLock, object machinesLock, Queue<ToyMachine> toyMachines, Queue<Present> undeliveredPresents, int expectedTotal, int total)
         {
             List<Task> taskList = new List<Task>();
 
@@ -24,7 +26,7 @@ namespace US1_SingleElf
                 }
                 taskList.Add(Task.Run(() =>
                 {
-                    CreatePresentTask(presentLock, ++total, _nextMachine, undeliveredPresents); 
+                    CreatePresentTask(familyNames[_random.Next(0,familyNames.Length-1)], presentLock, ++total, _nextMachine, undeliveredPresents); 
                     lock (machinesLock)
                     {
                         toyMachines.Enqueue(_nextMachine);
@@ -40,9 +42,9 @@ namespace US1_SingleElf
         }
 
 
-        private void CreatePresentTask(object presentLock, int total, ToyMachine nextMachine, Queue<Present> undeliveredPresents)
+        private void CreatePresentTask(string familyName, object presentLock, int total, ToyMachine nextMachine, Queue<Present> undeliveredPresents)
         {
-            Present _nextPresent = nextMachine.MakePresent($"Present-{total}");
+            Present _nextPresent = nextMachine.MakePresent($"{familyName} Family, ID:{total}", familyName);
             lock (presentLock)
             {
                 undeliveredPresents.Enqueue(_nextPresent);
