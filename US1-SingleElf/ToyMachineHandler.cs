@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,7 +24,7 @@ namespace US1_SingleElf
         /// <param name="expectedTotal">Expected Final Total of Presents</param>
         /// <param name="total">Current Total of Presents</param>
         /// <returns>number of presents created</returns>
-        public async Task<int> BuildPresents(List<string> familyNames, object presentLock, object machinesLock, Queue<ToyMachine> toyMachines, List<Present> undeliveredPresents, int expectedTotal, int total)
+        public async Task<int> BuildPresents(List<string> familyNames, object machinesLock, Queue<ToyMachine> toyMachines, ConcurrentQueue<Present> undeliveredPresents, int expectedTotal, int total)
         {
             List<Task> taskList = new List<Task>();
 
@@ -40,7 +41,7 @@ namespace US1_SingleElf
                 }
                 taskList.Add(Task.Run(() =>
                 {
-                    CreatePresentTask(familyNames[_random.Next(0,familyNames.Count-1)], presentLock, ++total, _nextMachine, undeliveredPresents); 
+                    CreatePresentTask(familyNames[_random.Next(0,familyNames.Count-1)], ++total, _nextMachine, undeliveredPresents); 
                     lock (machinesLock)
                     {
                         toyMachines.Enqueue(_nextMachine);
@@ -63,13 +64,10 @@ namespace US1_SingleElf
         /// <param name="total">Used for Id</param>
         /// <param name="machine">Machine assigned task</param>
         /// <param name="undeliveredPresents">List to add new present into</param>
-        private void CreatePresentTask(string familyName, object presentLock, int total, ToyMachine machine, List<Present> undeliveredPresents)
+        private void CreatePresentTask(string familyName, int total, ToyMachine machine, ConcurrentQueue<Present> undeliveredPresents)
         {
             Present _nextPresent = machine.MakePresent($"{familyName} Family, ID:{total}", familyName);
-            lock (presentLock)
-            {
-                undeliveredPresents.Add(_nextPresent);
-            }
+            undeliveredPresents.Enqueue(_nextPresent);
         }
     }
 }

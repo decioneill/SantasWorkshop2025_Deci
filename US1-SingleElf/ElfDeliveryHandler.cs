@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,28 +20,29 @@ namespace US1_SingleElf
         /// <param name="elves">Current Elf Queue</param>
         /// <param name="undeliveredPresents">list of undelivered Presents</param>
         /// <returns>Async Task</returns>
-        public async Task DeliverPresents(object presentLock, object elvesLock, Queue<Elf> elves, List<Present> undeliveredPresents)
+        public async Task DeliverPresents(object elvesLock, Queue<Elf> elves, ConcurrentQueue<Present> undeliveredPresents, string[] naughtyList)
         {
             List<Task> taskList = new List<Task>();
             Dictionary<string, List<Present>> groupedPresentsToDeliver = new Dictionary<string, List<Present>>();
-            lock (presentLock)
+            // Gather 1 present per elf from the undelivered Presents.
+            for (int i = 0; i < elves.Count; i++)
             {
-                // Gather 1 present per elf from the undelivered Presents.
-                for (int i = 0; i < elves.Count; i++)
+                if (undeliveredPresents.Any())
                 {
-                    if (undeliveredPresents.Any())
+                    // Sort these gathered presents into families.
+                    undeliveredPresents.TryDequeue(out Present nextPresent);
+                    if (naughtyList.Contains(nextPresent.Family))
                     {
-                        // Sort these gathered presents into families.
-                        Present nextPresent = undeliveredPresents[0];
-                        undeliveredPresents.RemoveAt(0);
-                        if (groupedPresentsToDeliver.ContainsKey(nextPresent.Family))
-                        {
-                            groupedPresentsToDeliver[nextPresent.Family].Add(nextPresent);
-                        }
-                        else
-                        {
-                            groupedPresentsToDeliver.Add(nextPresent.Family, new List<Present>() { nextPresent });
-                        }
+                        i--;
+                        continue;
+                    }
+                    if (groupedPresentsToDeliver.ContainsKey(nextPresent.Family))
+                    {
+                        groupedPresentsToDeliver[nextPresent.Family].Add(nextPresent);
+                    }
+                    else
+                    {
+                        groupedPresentsToDeliver.Add(nextPresent.Family, new List<Present>() { nextPresent });
                     }
                 }
             }
@@ -66,7 +68,7 @@ namespace US1_SingleElf
                         bool success = await DeliverPresentTask(_nextElf, present, elvesLock, elves, Sleigh);
                         if (!success)
                         {
-                            undeliveredPresents.Add(present);
+                            undeliveredPresents.Enqueue(present);
                             Console.WriteLine($"Present \"{present.Name}\" not delivered.");
                         }
                     }));

@@ -12,13 +12,12 @@ namespace US1_SingleElf
         static Random _random = new Random();
         static Queue<ToyMachine> _toyMachines;
         static Queue<Elf> _elves;
-        static List<Present> UndeliveredPresents = new List<Present>();
+        static ConcurrentQueue<Present> UndeliveredPresents = new ConcurrentQueue<Present>();
         static int _expectedTotal = 0;
         static int _totalPresents = 0;
 
         static object _machinesLock = new object();
         static object _elvesLock = new object();
-        static object _presentLock = new object();
 
         static ElfDeliveryHandler _elvesDeliveryHandler = new ElfDeliveryHandler();
         static ToyMachineHandler _toyMakerHandler = new ToyMachineHandler();
@@ -68,9 +67,9 @@ namespace US1_SingleElf
                 CheckNaughtyList(_familyNames, naughtyFamily);
 
                 // Build Presents for the Families
-                _totalPresents = await _toyMakerHandler.BuildPresents(_familyNames, _presentLock, _machinesLock, _toyMachines, UndeliveredPresents, _expectedTotal, _totalPresents);
+                _totalPresents = await _toyMakerHandler.BuildPresents(_familyNames, _machinesLock, _toyMachines, UndeliveredPresents, _expectedTotal, _totalPresents);
                 // Have Elves deliver the presents
-                await _elvesDeliveryHandler.DeliverPresents(_presentLock, _elvesLock, _elves, UndeliveredPresents);
+                await _elvesDeliveryHandler.DeliverPresents(_elvesLock, _elves, UndeliveredPresents, naughtyList.Select(x => x.Item1).ToArray());
 
                 //Checking it Twice
                 CheckNaughtyList(_familyNames, naughtyFamily);
@@ -101,8 +100,6 @@ namespace US1_SingleElf
             {
                 // Remove from Family Names to avoid new gifts
                 _familyNames.Remove(naughtyFamily);
-                // Remove any undelivered Presents
-                UndeliveredPresents.RemoveAll(present => present.Family == naughtyFamily);
                 // unload their gifts
                 if (_elvesDeliveryHandler.Sleigh.PackedPresents.ContainsKey(naughtyFamily))
                 {
