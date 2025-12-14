@@ -7,40 +7,72 @@ namespace US1_SingleElf
 {
     public class ElfDeliveryHandler
     {
-        public async Task DeliverPresents(object presentLock, object elvesLock, Queue<Elf> elves, Queue<Present> undeliveredPresents)
+        Random numberRandomizer = new Random();
+
+        public Sleigh Sleigh = new Sleigh();
+
+        /// <summary>
+        /// Organize Delivery of the Undelivered presents
+        /// </summary>
+        /// <param name="presentLock"></param>
+        /// <param name="elvesLock"></param>
+        /// <param name="elves">Current Elf Queue</param>
+        /// <param name="undeliveredPresents">list of undelivered Presents</param>
+        /// <returns>Async Task</returns>
+        public async Task DeliverPresents(object presentLock, object elvesLock, Queue<Elf> elves, List<Present> undeliveredPresents)
         {
             List<Task> taskList = new List<Task>();
-            List<Present> toBeDelivered = new List<Present>();
+            Dictionary<string, List<Present>> groupedPresentsToDeliver = new Dictionary<string, List<Present>>();
             lock (presentLock)
             {
+                // Gather 1 present per elf from the undelivered Presents.
                 for (int i = 0; i < elves.Count; i++)
                 {
                     if (undeliveredPresents.Any())
-                        toBeDelivered.Add(undeliveredPresents.Dequeue());
-                }
-            }
-            for (int i = 0; i < toBeDelivered.Count; i++)
-            {
-                Present present = toBeDelivered[i];
-                Elf _nextElf = null;
-                lock (elvesLock)
-                {
-                    if (elves.Any()) _nextElf = elves.Dequeue();
-                }
-                if (_nextElf == null)
-                {
-                    break;
-                }
-                taskList.Add(Task.Run(async () =>
-                {
-                    bool success = await DeliverPresentTask(_nextElf, present, elvesLock, elves);
-                    if (!success)
                     {
-                        undeliveredPresents.Enqueue(present);
-                        Console.WriteLine($"Present \"{present.Name}\" not delivered.");
+                        // Sort these gathered presents into families.
+                        Present nextPresent = undeliveredPresents[0];
+                        undeliveredPresents.RemoveAt(0);
+                        if (groupedPresentsToDeliver.ContainsKey(nextPresent.Family))
+                        {
+                            groupedPresentsToDeliver[nextPresent.Family].Add(nextPresent);
+                        }
+                        else
+                        {
+                            groupedPresentsToDeliver.Add(nextPresent.Family, new List<Present>() { nextPresent });
+                        }
                     }
-                }));
+                }
             }
+            // Assign each elf a Delivery task
+            foreach (KeyValuePair<string, List<Present>> kvp in groupedPresentsToDeliver)
+            {
+                // Assign Family presents to deliver to sleigh at same time
+                int delayAmount = numberRandomizer.Next(1, 1000);
+                foreach (Present present in kvp.Value)
+                {
+                    Elf _nextElf = null;
+                    lock (elvesLock)
+                    {
+                        if (elves.Any()) _nextElf = elves.Dequeue();
+                    }
+                    if (_nextElf == null)
+                    {
+                        break;
+                    }
+                    taskList.Add(Task.Run(async () =>
+                    {
+                        await Task.Delay(delayAmount);
+                        bool success = await DeliverPresentTask(_nextElf, present, elvesLock, elves, Sleigh);
+                        if (!success)
+                        {
+                            undeliveredPresents.Add(present);
+                            Console.WriteLine($"Present \"{present.Name}\" not delivered.");
+                        }
+                    }));
+                }
+            }
+            // Send the elves
             if (taskList.Any())
             {
                 Task allDeliveryTasks = Task.WhenAll(taskList.ToArray());
@@ -48,16 +80,25 @@ namespace US1_SingleElf
             }
         }
 
-        private async Task<bool> DeliverPresentTask(Elf _nextElf, Present _nextPresent, object elvesLock, Queue<Elf> elves)
+        /// <summary>
+        /// Task assigned to each elf with details of the delivery
+        /// </summary>
+        /// <param name="elf">Elf assigned to</param>
+        /// <param name="present">present to deliver</param>
+        /// <param name="elvesLock"></param>
+        /// <param name="elves">Queue to return to</param>
+        /// <param name="sleigh">Santas Sleigh</param>
+        /// <returns>success</returns>
+        private async Task<bool> DeliverPresentTask(Elf elf, Present present, object elvesLock, Queue<Elf> elves, Sleigh sleigh)
         {
             bool success = false;
-            if (_nextElf != null)
+            if (elf != null)
             {
-                success = await _nextElf.DeliverPresent(_nextPresent);
+                success = await elf.DeliverPresent(present, sleigh);
 
                 lock (elvesLock)
                 {
-                    elves.Enqueue(_nextElf);
+                    elves.Enqueue(elf);
                 }
             }
             return success;

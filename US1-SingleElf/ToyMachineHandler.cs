@@ -5,11 +5,25 @@ using System.Threading.Tasks;
 
 namespace US1_SingleElf
 {
+    /// <summary>
+    /// Handle the operations of the Toy Machines.
+    /// </summary>
     public class ToyMachineHandler
     {
         static Random _random = new Random();
 
-        public async Task<int> BuildPresents(string[] familyNames, object presentLock, object machinesLock, Queue<ToyMachine> toyMachines, Queue<Present> undeliveredPresents, int expectedTotal, int total)
+        /// <summary>
+        /// Assign Tasks to each Toy Machine to create a present.
+        /// </summary>
+        /// <param name="familyNames">List of Family Names</param>
+        /// <param name="presentLock"></param>
+        /// <param name="machinesLock"></param>
+        /// <param name="toyMachines">Machines in operation</param>
+        /// <param name="undeliveredPresents">Presents not yet delivered to sleigh</param>
+        /// <param name="expectedTotal">Expected Final Total of Presents</param>
+        /// <param name="total">Current Total of Presents</param>
+        /// <returns>number of presents created</returns>
+        public async Task<int> BuildPresents(List<string> familyNames, object presentLock, object machinesLock, Queue<ToyMachine> toyMachines, List<Present> undeliveredPresents, int expectedTotal, int total)
         {
             List<Task> taskList = new List<Task>();
 
@@ -26,7 +40,7 @@ namespace US1_SingleElf
                 }
                 taskList.Add(Task.Run(() =>
                 {
-                    CreatePresentTask(familyNames[_random.Next(0,familyNames.Length-1)], presentLock, ++total, _nextMachine, undeliveredPresents); 
+                    CreatePresentTask(familyNames[_random.Next(0,familyNames.Count-1)], presentLock, ++total, _nextMachine, undeliveredPresents); 
                     lock (machinesLock)
                     {
                         toyMachines.Enqueue(_nextMachine);
@@ -41,13 +55,20 @@ namespace US1_SingleElf
             return total;
         }
 
-
-        private void CreatePresentTask(string familyName, object presentLock, int total, ToyMachine nextMachine, Queue<Present> undeliveredPresents)
+        /// <summary>
+        /// Task assigned to each Machine to build a new Present
+        /// </summary>
+        /// <param name="familyName">Family it is to go to</param>
+        /// <param name="presentLock"></param>
+        /// <param name="total">Used for Id</param>
+        /// <param name="machine">Machine assigned task</param>
+        /// <param name="undeliveredPresents">List to add new present into</param>
+        private void CreatePresentTask(string familyName, object presentLock, int total, ToyMachine machine, List<Present> undeliveredPresents)
         {
-            Present _nextPresent = nextMachine.MakePresent($"{familyName} Family, ID:{total}", familyName);
+            Present _nextPresent = machine.MakePresent($"{familyName} Family, ID:{total}", familyName);
             lock (presentLock)
             {
-                undeliveredPresents.Enqueue(_nextPresent);
+                undeliveredPresents.Add(_nextPresent);
             }
         }
     }

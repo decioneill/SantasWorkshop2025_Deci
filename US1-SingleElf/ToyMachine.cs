@@ -7,14 +7,22 @@ using System.Threading.Tasks;
 
 namespace US1_SingleElf
 {
+    /// <summary>
+    /// Toy Machine for producing Presents
+    /// </summary>
     public class ToyMachine : NamedObject
     {
+        /// <summary>
+        /// Name of Toy Machine
+        /// </summary>
         public string Name { get; set; }
 
-        public ToyMachine()
-        {
-        }
-
+        /// <summary>
+        /// Make a brand new present
+        /// </summary>
+        /// <param name="presentName">Name to give present</param>
+        /// <param name="familyName">Family to receive present</param>
+        /// <returns>A new Present</returns>
         public Present MakePresent(string presentName, string familyName)
         {
             Present present = new Present() { Name = presentName, Family = familyName, CreatedByMachine = Name };

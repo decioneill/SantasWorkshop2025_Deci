@@ -3,17 +3,23 @@ using System.Threading.Tasks;
 
 namespace US1_SingleElf
 {
+    /// <summary>
+    /// Elves, the happy workers at Santas Workshop.
+    /// </summary>
     public class Elf : NamedObject
     {
-        public Elf() 
-        { 
-        }
-
+        /// <summary>
+        /// Elf Name (Id)
+        /// </summary>
         public string Name {  get; set; }
 
-        public Sleigh sleigh { get; set; }
-
-        public async Task<bool> DeliverPresent(Present present)
+        /// <summary>
+        /// Deliver a present to the Sleigh
+        /// </summary>
+        /// <param name="present">present</param>
+        /// <param name="sleigh">sleigh</param>
+        /// <returns>success</returns>
+        public async Task<bool> DeliverPresent(Present present, Sleigh sleigh)
         {
             if (present == null) return false;
             present.DeliveredByElf = Name;
