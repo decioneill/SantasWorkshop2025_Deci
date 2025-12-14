@@ -10,14 +10,11 @@ namespace US1_SingleElf
     internal class Program
     {
         static Random _random = new Random();
-        static Queue<ToyMachine> _toyMachines;
-        static Queue<Elf> _elves;
+        static ConcurrentQueue<ToyMachine> _toyMachines;
+        static ConcurrentQueue<Elf> _elves;
         static ConcurrentQueue<Present> UndeliveredPresents = new ConcurrentQueue<Present>();
         static int _expectedTotal = 0;
         static int _totalPresents = 0;
-
-        static object _machinesLock = new object();
-        static object _elvesLock = new object();
 
         static ElfDeliveryHandler _elvesDeliveryHandler = new ElfDeliveryHandler();
         static ToyMachineHandler _toyMakerHandler = new ToyMachineHandler();
@@ -67,9 +64,9 @@ namespace US1_SingleElf
                 CheckNaughtyList(_familyNames, naughtyFamily);
 
                 // Build Presents for the Families
-                _totalPresents = await _toyMakerHandler.BuildPresents(_familyNames, _machinesLock, _toyMachines, UndeliveredPresents, _expectedTotal, _totalPresents);
+                _totalPresents = await _toyMakerHandler.BuildPresents(_familyNames, _toyMachines, UndeliveredPresents, _expectedTotal, _totalPresents);
                 // Have Elves deliver the presents
-                await _elvesDeliveryHandler.DeliverPresents(_elvesLock, _elves, UndeliveredPresents, naughtyList.Select(x => x.Item1).ToArray());
+                await _elvesDeliveryHandler.DeliverPresents(_elves, UndeliveredPresents, naughtyList.Select(x => x.Item1).ToArray());
 
                 //Checking it Twice
                 CheckNaughtyList(_familyNames, naughtyFamily);
@@ -118,10 +115,10 @@ namespace US1_SingleElf
         /// <param name="number">Number to Instance</param>
         /// <param name="name">String Name for prefixing to its Name value</param>
         /// <returns>Queue of NamedObjects of number length</returns>
-        private static Queue<T> RandomQueueAmount<T>(int number, string name)
+        private static ConcurrentQueue<T> RandomQueueAmount<T>(int number, string name)
             where T : NamedObject
         {
-            Queue<T> _queue = new Queue<T>(number);
+            ConcurrentQueue<T> _queue = new ConcurrentQueue<T>();
             for (int i = number; i > 0; i--)
             {
                 T newItem = Activator.CreateInstance<T>();

@@ -17,35 +17,24 @@ namespace US1_SingleElf
         /// Assign Tasks to each Toy Machine to create a present.
         /// </summary>
         /// <param name="familyNames">List of Family Names</param>
-        /// <param name="presentLock"></param>
-        /// <param name="machinesLock"></param>
         /// <param name="toyMachines">Machines in operation</param>
         /// <param name="undeliveredPresents">Presents not yet delivered to sleigh</param>
         /// <param name="expectedTotal">Expected Final Total of Presents</param>
         /// <param name="total">Current Total of Presents</param>
         /// <returns>number of presents created</returns>
-        public async Task<int> BuildPresents(List<string> familyNames, object machinesLock, Queue<ToyMachine> toyMachines, ConcurrentQueue<Present> undeliveredPresents, int expectedTotal, int total)
+        public async Task<int> BuildPresents(List<string> familyNames, ConcurrentQueue<ToyMachine> toyMachines, ConcurrentQueue<Present> undeliveredPresents, int expectedTotal, int total)
         {
             List<Task> taskList = new List<Task>();
 
             for (int i = expectedTotal - total; i > 0; i--)
             {
                 ToyMachine _nextMachine = null;
-                lock (machinesLock)
-                {
-                    if (toyMachines.Any()) _nextMachine = toyMachines.Dequeue();
-                }
-                if (_nextMachine == null)
-                {
-                    break;
-                }
+                if (!toyMachines.Any() || !toyMachines.TryDequeue(out _nextMachine)) continue;
+
                 taskList.Add(Task.Run(() =>
                 {
-                    CreatePresentTask(familyNames[_random.Next(0,familyNames.Count-1)], ++total, _nextMachine, undeliveredPresents); 
-                    lock (machinesLock)
-                    {
-                        toyMachines.Enqueue(_nextMachine);
-                    }
+                    CreatePresentTask(familyNames[_random.Next(0, familyNames.Count - 1)], ++total, _nextMachine, undeliveredPresents);
+                    toyMachines.Enqueue(_nextMachine);
                 }));
             }
             if (taskList.Any())
@@ -60,7 +49,6 @@ namespace US1_SingleElf
         /// Task assigned to each Machine to build a new Present
         /// </summary>
         /// <param name="familyName">Family it is to go to</param>
-        /// <param name="presentLock"></param>
         /// <param name="total">Used for Id</param>
         /// <param name="machine">Machine assigned task</param>
         /// <param name="undeliveredPresents">List to add new present into</param>
