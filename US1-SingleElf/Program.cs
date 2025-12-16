@@ -5,9 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace US1_SingleElf
+namespace SantasWorkshop2025
 {
-    internal class Program
+    public class Program
     {
         static Random _random = new Random();
         static int _expectedTotal = 0;

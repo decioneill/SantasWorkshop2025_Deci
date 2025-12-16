@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace US1_SingleElf
+namespace SantasWorkshop2025
 {
     /// <summary>
     /// Santa's Wife, checking the naughty list.
     /// </summary>
-    internal class MrsClaus
+    public class MrsClaus
     {
         Random numberRandomizer = new Random();
 

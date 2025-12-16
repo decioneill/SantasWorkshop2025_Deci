@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace US1_SingleElf
+namespace SantasWorkshop2025
 {
     /// <summary>
     /// Simple interface to allow for type limiting on objects with Names (Id)

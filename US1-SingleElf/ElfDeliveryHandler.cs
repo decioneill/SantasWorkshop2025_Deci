@@ -4,8 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace US1_SingleElf
+namespace SantasWorkshop2025
 {
+    /// <summary>
+    /// Handles the Management of Elves on Delivery Duty
+    /// </summary>
     public class ElfDeliveryHandler
     {
         Random numberRandomizer = new Random();
@@ -30,8 +33,8 @@ namespace US1_SingleElf
         /// <summary>
         /// Organize Delivery of the Undelivered presents
         /// </summary>
-        /// <param name="_elves">Current Elf Queue</param>
         /// <param name="undeliveredPresents">list of undelivered Presents</param>
+        /// <param name="naughtyList">List of naughty Families</param>
         /// <returns>Async Task</returns>
         public async Task DeliverPresents(ConcurrentQueue<Present> undeliveredPresents, string[] naughtyList)
         {

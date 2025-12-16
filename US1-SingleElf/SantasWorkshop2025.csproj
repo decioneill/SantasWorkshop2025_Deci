@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{E915F9B7-ADE4-47B5-885F-92E2908B75F0}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>US1_SingleElf</RootNamespace>
-    <AssemblyName>US1-SingleElf</AssemblyName>
+    <RootNamespace>SantasWorkshop2025</RootNamespace>
+    <AssemblyName>SantasWorkshop2025</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

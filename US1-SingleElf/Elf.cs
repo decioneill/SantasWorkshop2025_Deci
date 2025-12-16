@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace US1_SingleElf
+namespace SantasWorkshop2025
 {
     /// <summary>
     /// Elves, the happy workers at Santas Workshop.

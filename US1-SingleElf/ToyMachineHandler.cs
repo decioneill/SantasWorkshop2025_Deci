@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace US1_SingleElf
+namespace SantasWorkshop2025
 {
     /// <summary>
     /// Handle the operations of the Toy Machines.
@@ -14,6 +14,9 @@ namespace US1_SingleElf
         static Random _random = new Random();
         private ConcurrentQueue<ToyMachine> _toyMachines;
 
+        /// <summary>
+        /// Current Operational Toy Machines
+        /// </summary>
         public ConcurrentQueue<ToyMachine> ToyMachines
         {
             get => _toyMachines;
@@ -28,7 +31,6 @@ namespace US1_SingleElf
         /// Assign Tasks to each Toy Machine to create a present.
         /// </summary>
         /// <param name="familyNames">List of Family Names</param>
-        /// <param name="_toyMachines">Machines in operation</param>
         /// <param name="undeliveredPresents">Presents not yet delivered to sleigh</param>
         /// <param name="expectedTotal">Expected Final Total of Presents</param>
         /// <param name="total">Current Total of Presents</param>
@@ -44,7 +46,7 @@ namespace US1_SingleElf
 
                 taskList.Add(Task.Run(() =>
                 {
-                    CreatePresentTask(familyNames[_random.Next(0, familyNames.Count - 1)], ++total, _nextMachine, undeliveredPresents);
+                    CreatePresentTask(familyNames[_random.Next(0, familyNames.Count - 1)], total, _nextMachine, undeliveredPresents);
                     _toyMachines.Enqueue(_nextMachine);
                 }));
             }
@@ -53,7 +55,7 @@ namespace US1_SingleElf
                 Task allPresentTasks = Task.WhenAll(taskList.ToArray());
                 await allPresentTasks;
             }
-            return total;
+            return total + taskList.Count(x => x.IsCompleted);
         }
 
         /// <summary>
@@ -65,8 +67,11 @@ namespace US1_SingleElf
         /// <param name="undeliveredPresents">List to add new present into</param>
         private void CreatePresentTask(string familyName, int total, ToyMachine machine, ConcurrentQueue<Present> undeliveredPresents)
         {
-            Present _nextPresent = machine.MakePresent($"{familyName} Family, ID:{total}", familyName);
-            undeliveredPresents.Enqueue(_nextPresent);
+            lock (undeliveredPresents)
+            {
+                Present _nextPresent = machine.MakePresent($"{familyName} Family, ID:{total}", familyName);
+                undeliveredPresents.Enqueue(_nextPresent);
+            }
         }
     }
 }
