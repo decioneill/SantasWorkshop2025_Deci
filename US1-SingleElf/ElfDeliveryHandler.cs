@@ -10,20 +10,76 @@ namespace US1_SingleElf
     {
         Random numberRandomizer = new Random();
 
+        /// <summary>
+        /// Current Working Elves
+        /// </summary>
+        public ConcurrentQueue<Elf> Elves
+        {
+            get => _elves;
+            set
+            {
+                _elves = value;
+                Console.WriteLine($"There are {_elves.Count} Elves working.");
+            }
+        }
+
         public Sleigh Sleigh = new Sleigh();
+
+        private ConcurrentQueue<Elf> _elves = new ConcurrentQueue<Elf>();
 
         /// <summary>
         /// Organize Delivery of the Undelivered presents
         /// </summary>
-        /// <param name="elves">Current Elf Queue</param>
+        /// <param name="_elves">Current Elf Queue</param>
         /// <param name="undeliveredPresents">list of undelivered Presents</param>
         /// <returns>Async Task</returns>
-        public async Task DeliverPresents(ConcurrentQueue<Elf> elves, ConcurrentQueue<Present> undeliveredPresents, string[] naughtyList)
+        public async Task DeliverPresents(ConcurrentQueue<Present> undeliveredPresents, string[] naughtyList)
         {
             List<Task> taskList = new List<Task>();
             Dictionary<string, List<Present>> groupedPresentsToDeliver = new Dictionary<string, List<Present>>();
+
             // Gather 1 present per elf from the undelivered Presents.
-            for (int i = 0; i < elves.Count; i++)
+            DequeueAndSortByFamily(undeliveredPresents, naughtyList, groupedPresentsToDeliver);
+
+            // Assign each elf a Delivery task
+            foreach (KeyValuePair<string, List<Present>> kvp in groupedPresentsToDeliver)
+            {
+                // Assign Family presents to deliver to sleigh at same time
+                int delayAmount = numberRandomizer.Next(1, 1000);
+                foreach (Present present in kvp.Value)
+                {
+                    Elf _nextElf = null;
+                    if (!_elves.Any() || !_elves.TryDequeue(out _nextElf)) continue;
+
+                    taskList.Add(Task.Run(async () =>
+                    {
+                        await Task.Delay(delayAmount);
+                        bool success = await DeliverPresentTask(_nextElf, present, _elves, Sleigh);
+                        if (!success)
+                        {
+                            undeliveredPresents.Enqueue(present);
+                            Console.WriteLine($"Present \"{present.Name}\" not delivered.");
+                        }
+                    }));
+                }
+            }
+            // Send the elves
+            if (taskList.Any())
+            {
+                Task allDeliveryTasks = Task.WhenAll(taskList.ToArray());
+                await allDeliveryTasks;
+            }
+        }
+
+        /// <summary>
+        /// Dequeue one Present per Elf, and sort into family groups
+        /// </summary>
+        /// <param name="undeliveredPresents">Full List of Undelivered presents</param>
+        /// <param name="naughtyList">Naughty Families</param>
+        /// <param name="groupedPresentsToDeliver">Dictionary of Presents By Family.</param>
+        private void DequeueAndSortByFamily(ConcurrentQueue<Present> undeliveredPresents, string[] naughtyList, Dictionary<string, List<Present>> groupedPresentsToDeliver)
+        {
+            for (int i = 0; i < _elves.Count; i++)
             {
                 if (undeliveredPresents.Any())
                 {
@@ -43,34 +99,6 @@ namespace US1_SingleElf
                         groupedPresentsToDeliver.Add(nextPresent.Family, new List<Present>() { nextPresent });
                     }
                 }
-            }
-            // Assign each elf a Delivery task
-            foreach (KeyValuePair<string, List<Present>> kvp in groupedPresentsToDeliver)
-            {
-                // Assign Family presents to deliver to sleigh at same time
-                int delayAmount = numberRandomizer.Next(1, 1000);
-                foreach (Present present in kvp.Value)
-                {
-                    Elf _nextElf = null;
-                    if (!elves.Any() || !elves.TryDequeue(out _nextElf)) continue;
-
-                    taskList.Add(Task.Run(async () =>
-                                            {
-                                                await Task.Delay(delayAmount);
-                                                bool success = await DeliverPresentTask(_nextElf, present, elves, Sleigh);
-                                                if (!success)
-                                                {
-                                                    undeliveredPresents.Enqueue(present);
-                                                    Console.WriteLine($"Present \"{present.Name}\" not delivered.");
-                                                }
-                                            }));
-                }
-            }
-            // Send the elves
-            if (taskList.Any())
-            {
-                Task allDeliveryTasks = Task.WhenAll(taskList.ToArray());
-                await allDeliveryTasks;
             }
         }
 

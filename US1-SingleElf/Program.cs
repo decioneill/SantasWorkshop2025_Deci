@@ -10,66 +10,86 @@ namespace US1_SingleElf
     internal class Program
     {
         static Random _random = new Random();
-        static ConcurrentQueue<ToyMachine> _toyMachines;
-        static ConcurrentQueue<Elf> _elves;
-        static ConcurrentQueue<Present> UndeliveredPresents = new ConcurrentQueue<Present>();
         static int _expectedTotal = 0;
         static int _totalPresents = 0;
 
+        static ConcurrentQueue<Present> _undeliveredPresents = new ConcurrentQueue<Present>();
+        static List<string> _familyNames = new List<string>();
+
         static ElfDeliveryHandler _elvesDeliveryHandler = new ElfDeliveryHandler();
         static ToyMachineHandler _toyMakerHandler = new ToyMachineHandler();
+        static MrsClaus _mrsClaus = new MrsClaus();
 
-        static MrsClaus mrsClaus = new MrsClaus();
-        static List<Tuple<string, int>> naughtyList = new List<Tuple<string, int>>();
+        /// <summary>
+        /// Tuples of Family Name and amount of presents removed
+        /// </summary>
+        static List<Tuple<string, int>> _naughtyList = new List<Tuple<string, int>>();
 
+        /// <summary>
+        /// Main Program
+        /// </summary>
+        /// <param name="args">args</param>
+        /// <returns>completed</returns>
         static async Task Main(string[] args)
         {
-
             InitializeSantasWorkshop();
             await RunSantasWorkshopOperation();
         }
 
+        /// <summary>
+        /// Run Santas Workshop Operation
+        /// </summary>
+        /// <returns>Completed</returns>
         private static async Task RunSantasWorkshopOperation()
         {
-            // Get All Families
-            List<string> _familyNames = new StreamReader("..\\..\\surnames.txt").ReadToEnd().Split(',').ToList();
-            string naughtyFamily = null;
-
             // While running
             while (true)
             {
-                if (_totalPresents >= _expectedTotal && !UndeliveredPresents.Any())
+                if (_totalPresents >= _expectedTotal && !_undeliveredPresents.Any())
                 {
                     // While no order, Show all presents delivered (or removed for being naughty)
-                    if (_totalPresents > 0)
-                    {
-                        if (naughtyList.Any())
-                        {
-                            Console.WriteLine($"\nFamilies Removed:");
-                            foreach (Tuple<string, int> tuple in naughtyList)
-                                Console.WriteLine($"   Family {tuple.Item1}, {tuple.Item2} presents removed.");
-                            Console.WriteLine();
-                        }
-                        Console.WriteLine($"All {_totalPresents} Presents packed and sent. Merry Christmas!");
-                    }
+                    ShowRemovedFamilies();
+
                     // Prompt User to give an order amount
                     Console.WriteLine("Place an order amount?");
                     int.TryParse(Console.ReadLine(), out int _newOrderAmount);
                     _expectedTotal += _newOrderAmount;
+
                     Console.WriteLine($"Total Expected Presents: {_expectedTotal}");
                     Console.WriteLine($"Current Total Presents: {_totalPresents}");
 
                 }
                 // Making a List
-                CheckNaughtyList(_familyNames, naughtyFamily);
+                CheckNaughtyList(_familyNames);
 
                 // Build Presents for the Families
-                _totalPresents = await _toyMakerHandler.BuildPresents(_familyNames, _toyMachines, UndeliveredPresents, _expectedTotal, _totalPresents);
+                _totalPresents = await _toyMakerHandler.BuildPresents(_familyNames, _undeliveredPresents, _expectedTotal, _totalPresents);
+
                 // Have Elves deliver the presents
-                await _elvesDeliveryHandler.DeliverPresents(_elves, UndeliveredPresents, naughtyList.Select(x => x.Item1).ToArray());
+                await _elvesDeliveryHandler.DeliverPresents(_undeliveredPresents, _naughtyList.Select(x => x.Item1).ToArray());
 
                 //Checking it Twice
-                CheckNaughtyList(_familyNames, naughtyFamily);
+                CheckNaughtyList(_familyNames);
+            }
+        }
+
+        /// <summary>
+        /// Display in Console Names of Families Removed and Presents removed from Sleigh / delivery.
+        /// </summary>
+        private static void ShowRemovedFamilies()
+        {
+            if (_totalPresents > 0)
+            {
+                if (_naughtyList.Any())
+                {
+                    Console.WriteLine($"\nFamilies Removed:");
+                    foreach (Tuple<string, int> tuple in _naughtyList)
+                    {
+                        Console.WriteLine($"   Family {tuple.Item1}, {tuple.Item2} presents removed.");
+                    }
+                    Console.WriteLine();
+                }
+                Console.WriteLine($"All {_totalPresents} Presents packed and sent. Merry Christmas!");
             }
         }
 
@@ -78,10 +98,9 @@ namespace US1_SingleElf
         /// </summary>
         private static void InitializeSantasWorkshop()
         {
-            _toyMachines = RandomQueueAmount<ToyMachine>(_random.Next(1, 10000), "Machine");
-            _elves = RandomQueueAmount<Elf>(_random.Next(1, 10000), "Elf");
-            Console.WriteLine($"There are {_toyMachines.Count} Toy Machines Operating.");
-            Console.WriteLine($"There are {_elves.Count} Elves working.");
+            _familyNames = new StreamReader("..\\..\\surnames.txt").ReadToEnd().Split(',').ToList();
+            _toyMakerHandler.ToyMachines = RandomQueueAmount<ToyMachine>(_random.Next(1, 10000), "Machine");
+            _elvesDeliveryHandler.Elves = RandomQueueAmount<Elf>(_random.Next(1, 10000), "Elf");
         }
 
         /// <summary>
@@ -89,10 +108,10 @@ namespace US1_SingleElf
         /// </summary>
         /// <param name="_familyNames">Current Families</param>
         /// <param name="naughtyFamily">A new naughty Family</param>
-        private static void CheckNaughtyList(List<string> _familyNames, string naughtyFamily)
+        private static void CheckNaughtyList(List<string> _familyNames)
         {
             // Check there is a family to remove
-            naughtyFamily = mrsClaus.DoubleCheckNaughtyList(_familyNames);
+            string naughtyFamily = _mrsClaus.DoubleCheckNaughtyList(_familyNames);
             if (naughtyFamily != null)
             {
                 // Remove from Family Names to avoid new gifts
@@ -102,7 +121,7 @@ namespace US1_SingleElf
                 {
                     _elvesDeliveryHandler.Sleigh.PackedPresents.TryRemove(naughtyFamily, out ConcurrentQueue<Present> removedPresents);
                     _totalPresents -= removedPresents.Count;
-                    naughtyList.Add(new Tuple<string, int>(naughtyFamily, removedPresents.Count));
+                    _naughtyList.Add(new Tuple<string, int>(naughtyFamily, removedPresents.Count));
                 }
             }
         }

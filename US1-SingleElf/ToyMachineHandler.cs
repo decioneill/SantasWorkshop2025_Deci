@@ -12,29 +12,40 @@ namespace US1_SingleElf
     public class ToyMachineHandler
     {
         static Random _random = new Random();
+        private ConcurrentQueue<ToyMachine> _toyMachines;
+
+        public ConcurrentQueue<ToyMachine> ToyMachines
+        {
+            get => _toyMachines;
+            set
+            {
+                _toyMachines = value;
+                Console.WriteLine($"There are {_toyMachines.Count} Toy Machines Operating.");
+            }
+        }
 
         /// <summary>
         /// Assign Tasks to each Toy Machine to create a present.
         /// </summary>
         /// <param name="familyNames">List of Family Names</param>
-        /// <param name="toyMachines">Machines in operation</param>
+        /// <param name="_toyMachines">Machines in operation</param>
         /// <param name="undeliveredPresents">Presents not yet delivered to sleigh</param>
         /// <param name="expectedTotal">Expected Final Total of Presents</param>
         /// <param name="total">Current Total of Presents</param>
         /// <returns>number of presents created</returns>
-        public async Task<int> BuildPresents(List<string> familyNames, ConcurrentQueue<ToyMachine> toyMachines, ConcurrentQueue<Present> undeliveredPresents, int expectedTotal, int total)
+        public async Task<int> BuildPresents(List<string> familyNames, ConcurrentQueue<Present> undeliveredPresents, int expectedTotal, int total)
         {
             List<Task> taskList = new List<Task>();
 
             for (int i = expectedTotal - total; i > 0; i--)
             {
                 ToyMachine _nextMachine = null;
-                if (!toyMachines.Any() || !toyMachines.TryDequeue(out _nextMachine)) continue;
+                if (!_toyMachines.Any() || !_toyMachines.TryDequeue(out _nextMachine)) continue;
 
                 taskList.Add(Task.Run(() =>
                 {
                     CreatePresentTask(familyNames[_random.Next(0, familyNames.Count - 1)], ++total, _nextMachine, undeliveredPresents);
-                    toyMachines.Enqueue(_nextMachine);
+                    _toyMachines.Enqueue(_nextMachine);
                 }));
             }
             if (taskList.Any())
