@@ -15,7 +15,7 @@ namespace SantasWorkshop2025.Tests
         public async Task DeliverPresentTest()
         {
             Present present = new Present() { CreatedByMachine = "M1", Family = "F1", Name = "P1" };
-            Sleigh sleigh = new Sleigh();
+            ISleigh sleigh = new Sleigh();
             Elf elf = new Elf()
             {
                 Name = "Elf01"

@@ -116,12 +116,13 @@ namespace SantasWorkshop2025
             {
                 // Remove from Family Names to avoid new gifts
                 _familyNames.Remove(naughtyFamily);
+
                 // unload their gifts
-                if (_elvesDeliveryHandler.Sleigh.PackedPresents.ContainsKey(naughtyFamily))
+                int numRemoved = _elvesDeliveryHandler.Sleigh.RemoveFamilyPresents(naughtyFamily);
+                if (numRemoved > 0)
                 {
-                    _elvesDeliveryHandler.Sleigh.PackedPresents.TryRemove(naughtyFamily, out ConcurrentQueue<Present> removedPresents);
-                    _totalPresents -= removedPresents.Count;
-                    _naughtyList.Add(new Tuple<string, int>(naughtyFamily, removedPresents.Count));
+                    _totalPresents -= numRemoved;
+                    _naughtyList.Add(new Tuple<string, int>(naughtyFamily, numRemoved));
                 }
             }
         }

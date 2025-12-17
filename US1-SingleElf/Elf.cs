@@ -19,7 +19,7 @@ namespace SantasWorkshop2025
         /// <param name="present">present</param>
         /// <param name="sleigh">sleigh</param>
         /// <returns>success</returns>
-        public async Task<bool> DeliverPresent(Present present, Sleigh sleigh)
+        public async Task<bool> DeliverPresent(Present present, ISleigh sleigh)
         {
             if (present == null) return false;
             present.DeliveredByElf = Name;

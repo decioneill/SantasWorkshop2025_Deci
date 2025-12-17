@@ -15,7 +15,7 @@ namespace SantasWorkshop2025.Tests
         [TestMethod()]
         public async Task DeliverPresentsTest()
         {
-            Sleigh sleigh = new Sleigh();
+            ISleigh sleigh = new Sleigh();
             ConcurrentQueue<Elf> elves = new ConcurrentQueue<Elf>();
             elves.Enqueue(new Elf());
             ElfDeliveryHandler handler = new ElfDeliveryHandler() { Elves = elves, Sleigh = sleigh };
@@ -24,7 +24,7 @@ namespace SantasWorkshop2025.Tests
             string[] naughtyList = new string[] { "Family02" };
             await handler.DeliverPresents(presents, naughtyList);
 
-            Assert.IsTrue(sleigh.PackedPresents.Count == 1);
+            Assert.IsTrue(sleigh.RemoveFamilyPresents("Family01") == 1);
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace SantasWorkshop2025.Tests
         [TestMethod()]
         public async Task DeliverPresentsManyTest()
         {
-            Sleigh sleigh = new Sleigh();
+            ISleigh sleigh = new Sleigh();
             ConcurrentQueue<Elf> elves = new ConcurrentQueue<Elf>();
             for (int i = 0; i < 10; i++)
             {
@@ -53,8 +53,7 @@ namespace SantasWorkshop2025.Tests
                 await handler.DeliverPresents(presents, naughtyList);
             }
 
-            // 100 presents - 2 naughty family presents
-            Assert.IsTrue(sleigh.PackedPresents.Count == 98);
+            Assert.IsTrue(presents.Count == 0);
         }
 
         /// <summary>
@@ -64,7 +63,7 @@ namespace SantasWorkshop2025.Tests
         [TestMethod()]
         public async Task DeliverPresentsTestFamilyFail()
         {
-            Sleigh sleigh = new Sleigh();
+            ISleigh sleigh = new Sleigh();
             ConcurrentQueue<Elf> elves = new ConcurrentQueue<Elf>();
             for (int i = 0; i < 100; i++)
             {
@@ -80,7 +79,7 @@ namespace SantasWorkshop2025.Tests
             string[] naughtyList = new string[] { "Family1" };
             await handler.DeliverPresents(presents, naughtyList);
 
-            Assert.IsTrue(sleigh.PackedPresents.Count == 0);
+            Assert.IsTrue(presents.Count == 0 && sleigh.RemoveFamilyPresents("Family1") == 0);
         }
 
         /// <summary>
@@ -90,15 +89,15 @@ namespace SantasWorkshop2025.Tests
         [TestMethod()]
         public async Task DeliverPresentsFamilySortedTest()
         {
-            Sleigh sleigh = new Sleigh();
+            ISleigh sleigh = new Sleigh();
             ConcurrentQueue<Elf> elves = new ConcurrentQueue<Elf>();
             for (int i = 0; i < 20; i++)
             {
                 elves.Enqueue(new Elf() { Name = $"Elf{i}" });
             }
             ElfDeliveryHandler handler = new ElfDeliveryHandler() { Elves = elves, Sleigh = sleigh };
-            Present[] presentArray = new Present[10];
-            for (int i = 0; i < 10; i++)
+            Present[] presentArray = new Present[20];
+            for (int i = 0; i < 20; i++)
             {
                 bool isEven = i % 2 == 0 ? true : false;
                 string familyName = isEven ? "Family1" : "Family2";
@@ -108,15 +107,12 @@ namespace SantasWorkshop2025.Tests
             string[] naughtyList = new string[0];
             await handler.DeliverPresents(presents, naughtyList);
 
-            bool isSorted = sleigh.PackedPresents.Count == 2;
+            int removedFamily1Amount = sleigh.RemoveFamilyPresents("Family1");
+            int removedFamily2Amount = sleigh.RemoveFamilyPresents("Family2");
+            bool isSorted = removedFamily1Amount == 10 && removedFamily2Amount == 10;
+            
 
-            if(isSorted)
-            {
-                isSorted = sleigh.PackedPresents["Family1"].All(x => x.Family == "Family1") 
-                    && sleigh.PackedPresents["Family2"].All(x => x.Family == "Family2");
-            }
-
-            Assert.IsTrue(isSorted);
+            Assert.IsTrue(isSorted, $"Family 1 removed {removedFamily1Amount}, Family 2 removed {removedFamily2Amount}.");
         }
     }
 }

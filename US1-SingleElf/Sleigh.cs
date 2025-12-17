@@ -9,7 +9,7 @@ namespace SantasWorkshop2025
     /// <summary>
     /// Sleigh for Delivering Present
     /// </summary>
-    public class Sleigh : IHttpModule
+    public class Sleigh : ISleigh, IHttpModule
     {
         #region IHttpModule Members
 
@@ -60,6 +60,16 @@ namespace SantasWorkshop2025
                 Console.WriteLine($"Present \"{present.Name}\", created by {present.CreatedByMachine}, delivered by {present.DeliveredByElf}, packed.");
             });
             return true;
+        }
+
+        public int RemoveFamilyPresents(string familyName)
+        {
+            if (PackedPresents.ContainsKey(familyName))
+            {
+                PackedPresents.TryRemove(familyName, out ConcurrentQueue<Present> removedPresents);
+                return removedPresents.Count;
+            }
+            return 0;
         }
     }
 }

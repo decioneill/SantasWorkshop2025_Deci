@@ -26,7 +26,7 @@ namespace SantasWorkshop2025
             }
         }
 
-        public Sleigh Sleigh = new Sleigh();
+        public ISleigh Sleigh = new Sleigh();
 
         private ConcurrentQueue<Elf> _elves = new ConcurrentQueue<Elf>();
 
@@ -113,7 +113,7 @@ namespace SantasWorkshop2025
         /// <param name="elves">Queue to return to</param>
         /// <param name="sleigh">Santas Sleigh</param>
         /// <returns>success</returns>
-        private async Task<bool> DeliverPresentTask(Elf elf, Present present, ConcurrentQueue<Elf> elves, Sleigh sleigh)
+        private async Task<bool> DeliverPresentTask(Elf elf, Present present, ConcurrentQueue<Elf> elves, ISleigh sleigh)
         {
             bool success = false;
             if (elf != null)
